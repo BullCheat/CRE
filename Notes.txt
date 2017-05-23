@@ -1,0 +1,20 @@
+AnalogRead f/u
+10Hz ~= 120
+20Hz ~= 240
+30Hz ~= 360
+40Hz ~= 480
+50Hz ~= 600
+80Hz ~= 960
+>970 = Out of range
+12/1024 / Hz
+
+1) Utiliser les ressources du serialEvent vers la section qui gère l'objet driver (RESET; START, VITESSE)	
+
+SEQ
+[DÉPART]
+    |
+    |
+START (vitesse)
+    |
+    |
+1er portique

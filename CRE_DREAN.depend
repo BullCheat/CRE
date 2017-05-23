@@ -1,0 +1,103 @@
+# depslib dependency file v1.0
+1486483185 source:e:\__arduino\cre_drean\cre_drean.cpp
+	<Arduino.h>
+	<Led.h>
+
+1371036702 d:\codeblocks\arduino\hardware\arduino\cores\arduino\arduino.h
+	<stdlib.h>
+	<string.h>
+	<math.h>
+	<avr/pgmspace.h>
+	<avr/io.h>
+	<avr/interrupt.h>
+	"binary.h"
+	"WCharacter.h"
+	"WString.h"
+	"HardwareSerial.h"
+	"pins_arduino.h"
+
+1362994150 d:\codeblocks\arduino\hardware\arduino\cores\arduino\binary.h
+
+1362994150 d:\codeblocks\arduino\hardware\arduino\cores\arduino\wcharacter.h
+	<ctype.h>
+
+1371036734 d:\codeblocks\arduino\hardware\arduino\cores\arduino\wstring.h
+	<stdlib.h>
+	<string.h>
+	<ctype.h>
+	<avr/pgmspace.h>
+
+1362994150 d:\codeblocks\arduino\hardware\arduino\cores\arduino\hardwareserial.h
+	<inttypes.h>
+	"Stream.h"
+	"USBAPI.h"
+
+1371036430 d:\codeblocks\arduino\hardware\arduino\cores\arduino\stream.h
+	<inttypes.h>
+	"Print.h"
+
+1362994150 d:\codeblocks\arduino\hardware\arduino\cores\arduino\print.h
+	<inttypes.h>
+	<stdio.h>
+	"WString.h"
+	"Printable.h"
+
+1362994150 d:\codeblocks\arduino\hardware\arduino\cores\arduino\printable.h
+	<new.h>
+
+1362994150 d:\codeblocks\arduino\hardware\arduino\cores\arduino\new.h
+	<stdlib.h>
+
+1362994150 d:\codeblocks\arduino\hardware\arduino\cores\arduino\usbapi.h
+
+1362994150 d:\codeblocks\arduino\hardware\arduino\variants\standard\pins_arduino.h
+	<avr/pgmspace.h>
+
+1486479807 source:e:\__arduino\cre_drean\objets\led.cpp
+	<Led.h>
+	<Arduino.h>
+
+1486479764 e:\__arduino\cre_drean\objets\led.h
+
+1489510178 source:i:\__arduino\cre_drean\objets\led.cpp
+	<Led.h>
+	<Arduino.h>
+
+1489505636 i:\__arduino\cre_drean\objets\led.h
+
+1489515020 source:i:\__arduino\cre_drean\objets\motor.cpp
+	<Motor.h>
+	<Arduino.h>
+
+1494935494 i:\__arduino\cre_drean\objets\motor.h
+
+1494938304 source:i:\__arduino\cre_drean\cre_drean.cpp
+	<Arduino.h>
+	<Led.h>
+	<Motor.h>
+	<ProximitySensor.h>
+	<FlexiTimer2.h>
+
+1491315998 source:i:\__arduino\cre_drean\src\proximitysensor.cpp
+	"ProximitySensor.h"
+	<Arduino.h>
+
+1491315968 i:\__arduino\cre_drean\include\proximitysensor.h
+
+1494343222 source:i:\__arduino\cre_drean\objets\proximitysensor.cpp
+	"ProximitySensor.h"
+	<Arduino.h>
+
+1493120702 i:\__arduino\cre_drean\objets\proximitysensor.h
+
+1493128990 source:i:\__arduino\cre_drean\objets\flexitimer2.cpp
+	<FlexiTimer2.h>
+
+1493129002 i:\__arduino\cre_drean\h\flexitimer2.h
+	<avr/interrupt.h>
+	<Arduino.h>
+
+1494935906 source:i:\__arduino\cre_drean\objets\ln298.cpp
+	<Motor.h>
+	<Arduino.h>
+
