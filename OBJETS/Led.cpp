@@ -1,9 +1,3 @@
-/*! ===========================================================================================================================
-  Classe: Led.cpp                        Fichier d'impémentation
-  Editor: Lycée Marcel Callo
-  date:02-10-2016
-//============================================================================================================================*/
-
 #include <Led.h>
 #include <Arduino.h>
 
@@ -41,7 +35,7 @@ void Led::refresh() {
     digitalWrite(getPin(), (this->getState()) ^ this->isReversed());
 }
 
-/* ATTENTION : Appel bloquant */
+/* ATTENTIONÂ : Appel bloquant */
 void Led::blink(int millisecs) {
     this->getState() ? off() : on();
     delay(millisecs);
@@ -66,5 +60,5 @@ void Led::off() {
 
 
 /*! ===========================================================================================================================
-//                         Impémentation des méthodes
+//                         ImpÃ©mentation des mÃ©thodes
 // ===========================================================================================================================*/

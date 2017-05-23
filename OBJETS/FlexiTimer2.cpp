@@ -27,7 +27,6 @@
 */
 
 #include <FlexiTimer2.h>
-
 unsigned long FlexiTimer2::time_units;
 void (*FlexiTimer2::func)();
 volatile unsigned long FlexiTimer2::count;
@@ -49,21 +48,21 @@ void FlexiTimer2::set(unsigned long ms, void (*f)()) {
  */
 void FlexiTimer2::set(unsigned long units, double resolution, void (*f)()) {
 	float prescaler = 0.0;
-	
+
 	if (units == 0)
 		time_units = 1;
 	else
 		time_units = units;
-		
+
 	func = f;
-	
+
 #if defined (__AVR_ATmega168__) || defined (__AVR_ATmega48__) || defined (__AVR_ATmega88__) || defined (__AVR_ATmega328P__) || defined (__AVR_ATmega1280__) || defined (__AVR_ATmega2560__) || defined(__AVR_AT90USB646__) || defined(__AVR_AT90USB1286__)
 	TIMSK2 &= ~(1<<TOIE2);
 	TCCR2A &= ~((1<<WGM21) | (1<<WGM20));
 	TCCR2B &= ~(1<<WGM22);
 	ASSR &= ~(1<<AS2);
 	TIMSK2 &= ~(1<<OCIE2A);
-	
+
 	if ((F_CPU >= 1000000UL) && (F_CPU <= 16000000UL)) {	// prescaler set to 64
 		TCCR2B |= (1<<CS22);
 		TCCR2B &= ~((1<<CS21) | (1<<CS20));
@@ -82,7 +81,7 @@ void FlexiTimer2::set(unsigned long units, double resolution, void (*f)()) {
 	TCCR2 &= ~((1<<WGM21) | (1<<WGM20));
 	TIMSK &= ~(1<<OCIE2);
 	ASSR &= ~(1<<AS2);
-	
+
 	if ((F_CPU >= 1000000UL) && (F_CPU <= 16000000UL)) {	// prescaler set to 64
 		TCCR2 |= (1<<CS22);
 		TCCR2 &= ~((1<<CS21) | (1<<CS20));
@@ -100,7 +99,7 @@ void FlexiTimer2::set(unsigned long units, double resolution, void (*f)()) {
 	TIMSK &= ~(1<<TOIE2);
 	TCCR2 &= ~((1<<WGM21) | (1<<WGM20));
 	TIMSK &= ~(1<<OCIE2);
-	
+
 	if ((F_CPU >= 1000000UL) && (F_CPU <= 16000000UL)) {	// prescaler set to 64
 		TCCR2 |= ((1<<CS21) | (1<<CS20));
 		TCCR2 &= ~(1<<CS22);
@@ -153,7 +152,7 @@ void FlexiTimer2::set(unsigned long units, double resolution, void (*f)()) {
 #else
 #error Unsupported CPU type
 #endif
-	
+
 	tcnt2 = 256 - (int)((float)F_CPU * resolution / prescaler);
 }
 
@@ -194,7 +193,7 @@ void FlexiTimer2::stop() {
 
 void FlexiTimer2::_overflow() {
 	count += 1;
-	
+
 	if (count >= time_units && !overflowing) {
 		overflowing = 1;
 		count = count - time_units; // subtract time_uints to catch missed overflows
