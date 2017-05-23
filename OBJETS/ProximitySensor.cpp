@@ -1,7 +1,7 @@
 #include "ProximitySensor.h"
 #include <Arduino.h>
 
-unsigned long lastPoll;
+unsigned long lastPoll; // C'est cool
 volatile unsigned long lastDistanceSet;
 volatile unsigned long distance;
 
