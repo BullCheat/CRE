@@ -66,14 +66,16 @@ ProximitySensor proximitySensor (PRX_TRG_PIN, PRX_ECH_PIN, PROXIMITY_INTERVAL);
 /**
     ISR incrémentant la distance
 **/
-void _isrDistance(void) {
+void _isrDistance(void)
+{
     dst++;
 }
 
 /**
     ISR envoyant un ultrason pour la mesure de proximité
 **/
-void _pollProximitySensor(void) { // ISR pour envoyer un ultrason
+void _pollProximitySensor(void)   // ISR pour envoyer un ultrason
+{
     proximitySensor.poll();
 }
 
@@ -86,16 +88,23 @@ void _pollProximitySensor(void) { // ISR pour envoyer un ultrason
     @param end Fin du nombre dans la chaîne ascii
     @default end BLUETOOTH_BUFFER_LENGTH
 **/
-long int parseInt(char ascii[], char offset, char end) {
+long int parseInt(char ascii[], char offset, char end)
+{
     long int x = 0;
     char m = 1;
-    for (int i = offset; i < end; i++) {
+    for (int i = offset; i < end; i++)
+    {
         char c = ascii[i];
-        if (c >= 0x30 && c <= 0x39) {
+        if (c >= 0x30 && c <= 0x39)
+        {
             x*=10;
             x += c - 0x30;
-        } else if (c == '+') {
-        } else if (c == '-') {
+        }
+        else if (c == '+')
+        {
+        }
+        else if (c == '-')
+        {
             m = -m;
         }
 
@@ -106,13 +115,15 @@ long int parseInt(char ascii[], char offset, char end) {
 /**
     @return distance parcourue depuis le début en mètre
 **/
-float getDistance(void) {
+float getDistance(void)
+{
     return dst / (float) TEETH_COUNT * DISTANCE_PER_ROTATION;
 }
 /**
     @return vitesse en m/s
 **/
-float getInstantSpeed(void) {
+float getInstantSpeed(void)
+{
     int poll = analogRead(F_U_PIN); // On lit la valeur
     poll -= U_ORIGIN; // On retire le "b" de ax+b
     float freq = poll / (float) U_PER_HZ; // On divise pour obtenir la fréquence
@@ -127,62 +138,82 @@ float getInstantSpeed(void) {
     Setup UART
 **/
 void setup(void)
- {
+{
     Serial.begin(SPEED);
     pinMode(F_U_PIN, INPUT); // On met la carte fréquence/tension en lecture
     FlexiTimer2::set(PROXIMITY_INTERVAL, 0.001, _pollProximitySensor);
     FlexiTimer2::start(); // Utilise INT0 - Désactivé pour pouvoir calculer la distance
     pinMode(PIN_ISR_DISTANCE, INPUT_PULLUP);
     attachInterrupt(PIN_ISR_DISTANCE-2, _isrDistance, RISING);
- }
+}
 
 
 
 ///
 /// Réception des commandes ICI
 ///
-void handleSerial(void) {
-    if (bBuffer[0] == 'T') { // Throttle -> Avancer
+void handleSerial(void)
+{
+    if (bBuffer[0] == 'T')   // Throttle -> Avancer
+    {
         int speed = parseInt(bBuffer, 1, BLUETOOTH_BUFFER_LENGTH);
         motor.forward(speed);
-    } else if (bBuffer[0] == 'F') { // Free -> Libérer la roue
+    }
+    else if (bBuffer[0] == 'F')     // Free -> Libérer la roue
+    {
         motor.free();
-    } else if (bBuffer[0] == 'S') { // S -> Scénario
+    }
+    else if (bBuffer[0] == 'S')     // S -> Scénario
+    {
         char scenario = parseInt(bBuffer, 1, 2);
-    } else { // Ping ou erreur
+    }
+    else     // Ping ou erreur
+    {
         Serial.print(bBuffer[0]);
     }
 }
 
 
 /// Gestion des commandes, ne pas éditer
-void serialEvent(void) {
+void serialEvent(void)
+{
     static unsigned char bLenTmp[3]; // Buffer de lecture de la longueur de la trame (3 caratères)
     static unsigned char bLen = 0; // Longueur de la trame
     static unsigned char bState = 0; // État (0 = rien, 1 = lecture de la taille, 2 = lecture de la trame)
     static unsigned char bIndex = 0; // Index de lecture de la trame
-    while (Serial.available()) {
+    while (Serial.available())
+    {
         char c = Serial.read();
-        if (bState == 0 || bState == 1) { // On est en cours de lecture du début de la trame
-            if (bState == 1 && c == '\r') { // Chiffres fini
+        if (bState == 0 || bState == 1)   // On est en cours de lecture du début de la trame
+        {
+            if (bState == 1 && c == '\r')   // Chiffres fini
+            {
                 bLen = 0;
-                for (int i = bIndex - 1; i >= 0; i--) {
+                for (int i = bIndex - 1; i >= 0; i--)
+                {
                     bLen *= 10;
                     bLen += bLenTmp[i];
                 }
                 memset(&bLenTmp[0], 0, 3);
-            } else if (bState == 1 && c == '\n') { // On a fini l'en-tête, on passe en mode lecture des données dans le buffer
+            }
+            else if (bState == 1 && c == '\n')     // On a fini l'en-tête, on passe en mode lecture des données dans le buffer
+            {
                 bState = 2; // État à 2
                 bIndex = 0; // Indexes à 0
                 memset(&bBuffer[0], 0, BLUETOOTH_BUFFER_LENGTH); // On vide le tableau
-            } else if (c >= 0x30 && c < 0x3A) { // On lit la longueur
+            }
+            else if (c >= 0x30 && c < 0x3A)     // On lit la longueur
+            {
                 bState = 1;
                 bLenTmp[bIndex++] = c  - 0x30;
             }
 
-        } else if (bState == 2) { // On lit la trame
+        }
+        else if (bState == 2)     // On lit la trame
+        {
             bBuffer[bIndex++] = c;
-            if (bIndex == bLen) { // On a tout reçu
+            if (bIndex == bLen)   // On a tout reçu
+            {
                 handleSerial();
                 bIndex = bLen = bState = 0;
                 memset(&bBuffer[0], 0, BLUETOOTH_BUFFER_LENGTH); // On vide le tableau
@@ -199,9 +230,11 @@ void serialEvent(void) {
 
 void loop(void)
 {
-        long distance = proximitySensor.getDistance();
-        if (distance > 200 && distance < 300) {
-            redLed.on();
-        } else redLed.off();
+    long distance = proximitySensor.getDistance();
+    if (distance > 200 && distance < 300)
+    {
+        redLed.on();
+    }
+    else redLed.off();
 
 }

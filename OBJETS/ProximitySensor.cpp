@@ -10,14 +10,15 @@ volatile unsigned long distance;
 /**
     Interrupt pour mettre à jour la distance
 **/
-void interrupt(void) {
+void interrupt(void)
+{
     unsigned long result = micros() - lastPoll;
     distance = result * mS_TO_CM;
     lastDistanceSet = micros();
 }
 
 
- // Object starts here
+// Object starts here
 ProximitySensor::ProximitySensor(char trigger, char echo, long wait)
 {
     this->triggerPin = trigger;
@@ -34,7 +35,8 @@ ProximitySensor::ProximitySensor(char trigger, char echo, long wait)
     Appel non-bloquant.
     @return La distance relevée par le capteur ultrason ou -1 si OoR
 **/
-long ProximitySensor::getDistance() {
+long ProximitySensor::getDistance()
+{
     return micros() - lastDistanceSet < this->wait*1000 + 1000 ? distance : -1;
 }
 
@@ -42,7 +44,8 @@ long ProximitySensor::getDistance() {
     Envoie une demande de ping au capteur à ultrasons.
     Appel non-bloquant.
 **/
-void ProximitySensor::poll(void) {
+void ProximitySensor::poll(void)
+{
     digitalWrite(this->triggerPin, 1);
     delayMicroseconds(DELAY_uS);
     lastPoll = micros();

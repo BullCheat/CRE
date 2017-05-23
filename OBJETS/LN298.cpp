@@ -2,7 +2,8 @@
 #include <Arduino.h>
 
 
-Motor::Motor(char ena, char in1, char in2) {
+Motor::Motor(char ena, char in1, char in2)
+{
     this->ena = ena;
     this->in1 = in1;
     this->in2 = in2;
@@ -18,7 +19,8 @@ Motor::Motor(char ena, char in1, char in2) {
 /**
     Avance à la vitesse 0 ≤ speed < 256
 **/
-void Motor::forward(int speed) {
+void Motor::forward(int speed)
+{
     this->power = true;
     this->reverse = speed < 0;
     this->speed = speed < 0 ? -speed : speed;
@@ -28,7 +30,8 @@ void Motor::forward(int speed) {
 /**
     Passe en roue-libre
 **/
-void Motor::free() {
+void Motor::free()
+{
     this->speed = this->reverse = this->power = 0;
     this->update();
 }
@@ -37,25 +40,29 @@ void Motor::free() {
     Recule à la vitesse 0 ≤ speed < 256
 **/
 
-void Motor::backward(int speed) {
+void Motor::backward(int speed)
+{
     this->forward(-speed);
 }
 
-void Motor::stop() {
+void Motor::stop()
+{
     this->forward(0);
 }
 
 /**
     Le moteur est-il en roue-libre ?
 **/
-bool Motor::isFree() {
+bool Motor::isFree()
+{
     return !this->power;
 }
 
 /**
     Met à jour la « transmission » vers le moteur
 **/
-void Motor::update() {
+void Motor::update()
+{
     digitalWrite(ena, this->power);
     analogWrite(in1, !this->reverse ? speed : 0);
     analogWrite(in2,  this->reverse ? speed : 0);
