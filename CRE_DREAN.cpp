@@ -27,7 +27,7 @@ using namespace std;
 #define YELLOW_PIN 10 // Led jaune
 
 #define SPEED 115200 // Vitesse UART
-#define BLUETOOTH_BUFFER 16 // Taille maximale des messages bluetooth
+#define BLUETOOTH_BUFFER_LENGTH 16 // Taille maximale des messages bluetooth
 
 // Motor
 /// À configurer
@@ -56,7 +56,7 @@ Led redLed      (RED_PIN   , false);
 Led blueLed     (BLUE_PIN  , false);
 Led yellowLed   (YELLOW_PIN, false);
 volatile unsigned int dst; /// Attention, distance max ~1km
-char bBuffer[BLUETOOTH_BUFFER]; // buffer bluetooth
+char bBuffer[BLUETOOTH_BUFFER_LENGTH]; // buffer bluetooth
 
 Motor motor (ENA_PIN, IN1_PIN, IN2_PIN);
 ProximitySensor proximitySensor (PRX_TRG_PIN, PRX_ECH_PIN, PROXIMITY_INTERVAL);
@@ -84,7 +84,7 @@ void _pollProximitySensor(void) { // ISR pour envoyer un ultrason
     @param offset Où commencer dans la chaîne ascii ?
     @default ascii 0
     @param end Fin du nombre dans la chaîne ascii
-    @default end BLUETOOTH_BUFFER
+    @default end BLUETOOTH_BUFFER_LENGTH
 **/
 long int parseInt(char ascii[], char offset, char end) {
     long int x = 0;
@@ -142,11 +142,13 @@ void setup(void)
 /// Réception des commandes ICI
 ///
 void handleSerial(void) {
-    if (bBuffer[0] == 'T') {
-        int speed = parseInt(bBuffer, 1, BLUETOOTH_BUFFER);
+    if (bBuffer[0] == 'T') { // Throttle -> Avancer
+        int speed = parseInt(bBuffer, 1, BLUETOOTH_BUFFER_LENGTH);
         motor.forward(speed);
-    } else if (bBuffer[0] == 'F') {
+    } else if (bBuffer[0] == 'F') { // Free -> Libérer la roue
         motor.free();
+    } else if (bBuffer[0] == 'S') { // S -> Scénario
+        char scenario = parseInt(bBuffer, 1, 2);
     } else { // Ping ou erreur
         Serial.print(bBuffer[0]);
     }
@@ -172,7 +174,7 @@ void serialEvent(void) {
             } else if (bState == 1 && c == '\n') { // On a fini l'en-tête, on passe en mode lecture des données dans le buffer
                 bState = 2; // État à 2
                 bIndex = 0; // Indexes à 0
-                memset(&bBuffer[0], 0, BLUETOOTH_BUFFER); // On vide le tableau
+                memset(&bBuffer[0], 0, BLUETOOTH_BUFFER_LENGTH); // On vide le tableau
             } else if (c >= 0x30 && c < 0x3A) { // On lit la longueur
                 bState = 1;
                 bLenTmp[bIndex++] = c  - 0x30;
@@ -183,7 +185,7 @@ void serialEvent(void) {
             if (bIndex == bLen) { // On a tout reçu
                 handleSerial();
                 bIndex = bLen = bState = 0;
-                memset(&bBuffer[0], 0, BLUETOOTH_BUFFER); // On vide le tableau
+                memset(&bBuffer[0], 0, BLUETOOTH_BUFFER_LENGTH); // On vide le tableau
             }
         }
     }
