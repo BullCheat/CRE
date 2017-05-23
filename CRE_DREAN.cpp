@@ -3,6 +3,9 @@
   Target used = Arduino Uno R3
   Software version : v6
   Editor: Alexandre DRÉAN
+  Description : Programme de contrôle du véhicule CRE.
+                Capteur ultrasons via interrupt + FlexiTimer
+                Capteur fourche (vitesse) via carte fréquence/tension (analog) + interrupt
 //============================================================================================================================*/
 
 
