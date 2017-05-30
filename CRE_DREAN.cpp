@@ -38,7 +38,7 @@ using namespace std;
 #define IN1_PIN 5 // Pin IN1 driver moteur
 #define IN2_PIN 6 // Pin IN2 driver moteur
 
-#define PROXIMITY_INTERVAL 50 // Intervalle de vérification de la proximité (en ms)
+#define PROXIMITY_INTERVAL 10 // Intervalle de vérification de la proximité (en ms)
 #define PRX_TRG_PIN 7 // Pin TRIG HC-SR04
 #define PRX_ECH_PIN 2 // Pin ECHO HC-SR04
 
@@ -63,10 +63,10 @@ Led blueLed     (BLUE_PIN  , false);
 Led yellowLed   (YELLOW_PIN, false);
 volatile unsigned int dst; /// Attention, distance max ~1km
 char bBuffer[BLUETOOTH_BUFFER_LENGTH]; // buffer bluetooth
-float portiques[][4] = {{5, -1, -1, -1}, {3, 5, 7, -1}};
-int initialSpeeds[] = {255, 255};
-char scenario = -1;
-char portique = 0;
+float portiques[][4] = {{5, -1, -1, -1}, {3, 5, 7, -1}}; // Distances des portiques de l'origine du scénario
+int initialSpeeds[] = {255, 255}; // Vitesses initiales des scénarios
+char scenario = -1; // Scénario (-1 par défaut)
+char portique = 0; // Portique actuel (0 par défaut)
 
 Motor motor (ENA_PIN, IN1_PIN, IN2_PIN);
 ProximitySensor proximitySensor (PRX_TRG_PIN, PRX_ECH_PIN, PROXIMITY_INTERVAL);
@@ -157,6 +157,13 @@ void setup(void)
     attachInterrupt(PIN_ISR_DISTANCE-2, _isrDistance, RISING);
 }
 
+/**
+    Gestion des événements liés à la détection de portique
+
+**//* MODIFIER les scénarios ICI *//**
+
+    @param forced Si la fonction a été déclenchée par timeout et non par portique
+**/
 void handlePortique(bool forced)
 {
     if (scenario == 0)
@@ -183,9 +190,11 @@ void handlePortique(bool forced)
     }
 }
 
-///
-/// Réception des commandes ICI
-///
+/**
+    Gestion des événements liés aux commandes.
+**/
+    /* AJOUTER les commandes ICI */
+
 void handleSerial(void)
 {
     if (bBuffer[0] == 'T')   // Throttle -> Avancer
@@ -211,7 +220,7 @@ void handleSerial(void)
 }
 
 
-/// Gestion des commandes, ne pas éditer
+/* Envoi des commandes vers handleSerial */ /// Ne pas éditer
 void serialEvent(void)
 {
     static unsigned char bLenTmp[3]; // Buffer de lecture de la longueur de la trame (3 caratères)
@@ -259,6 +268,44 @@ void serialEvent(void)
     }
 }
 
+/**
+    Passe les portiques + appelle handlePortique
+**/
+void calcPortiques(void) {
+    float distance = getDistance(); // Distance parcourue
+    /* Gestion LED */
+    // Si est dans la zone d'un portique on allume la LED
+    if (portiques[scenario][portique] != -1 && distance > portiques[scenario][portique] - PORTIQUE_DISTANCE_TOLERANCE && distance < portiques[scenario][portique] + PORTIQUE_DISTANCE_TOLERANCE)
+    {
+        redLed.on();
+    } // Sinon on l'éteint
+    else redLed.off();
+    float ceil = proximitySensor.getDistance(); // Distance ultrasons
+    /* Gestion passage portique */
+    if (ceil > PORTIQUE_HEIGHT - PORTIQUE_HEIGHT_TOLERANCE && ceil < PORTIQUE_HEIGHT + PORTIQUE_HEIGHT_TOLERANCE) // Si l'ultrasons détecte quelque-chose à la distance attendue pour un portique
+    {
+        if (portiques[scenario][portique] != -1) // Si on n'est pas à la fin du scénario
+        {
+            if (distance > portiques[scenario][portique] - PORTIQUE_DISTANCE_TOLERANCE) // Si on est dans la zone d'erreur du portique (pas besoin de tester avec + TOLERANCE car on gère le tout plus bas (timeout))
+            {
+                // On passe le portique et on appelle la fonction de gestion
+                ++portique;
+                handlePortique(false);
+            }
+        }
+    }
+/* Gestion timeout portique */
+    // Si on est dans un scénario
+    // Quelle est la distance prévue ?
+    float expected = portiques[scenario][portique];
+    if (expected != -1) // Si on n'est pas à la fin du scénario
+    {
+        // Si on a dépassé la zone du portique,
+        /* timeout */
+        if (distance > expected + PORTIQUE_DISTANCE_TOLERANCE) handlePortique(true);
+    }
+}
+
 
 /*! ===========================================================================================================================
 //                          programme principal
@@ -266,36 +313,7 @@ void serialEvent(void)
 
 void loop(void)
 {
-    float distance = getDistance();
-    if (scenario != -1 && portiques[scenario][portique] != -1 && distance > portiques[scenario][portique] - PORTIQUE_DISTANCE_TOLERANCE && distance < portiques[scenario][portique] + PORTIQUE_DISTANCE_TOLERANCE)
-    {
-        redLed.on();
-    }
-    else redLed.off();
-    float ceil = proximitySensor.getDistance();
-    if (ceil > PORTIQUE_HEIGHT - PORTIQUE_HEIGHT_TOLERANCE && ceil < PORTIQUE_HEIGHT + PORTIQUE_HEIGHT_TOLERANCE)
-    {
-        if (scenario != -1)
-        {
-            if (portiques[scenario][portique] != -1)
-            {
-                if (distance > portiques[scenario][portique] - PORTIQUE_DISTANCE_TOLERANCE)
-                {
-                    ++portique;
-                    handlePortique(false);
-                }
-            }
-        }
-    }
-
-    if (scenario != -1)
-    {
-        float expected = portiques[scenario][portique];
-        if (expected != -1)
-        {
-            expected += PORTIQUE_DISTANCE_TOLERANCE;
-            if (distance > expected) handlePortique(true);
-        }
-    }
+    // On gère le passage des portiques si on est dans un scénario
+    if (scenario != 1) calcPortiques();
 
 }
