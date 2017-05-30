@@ -64,7 +64,7 @@ Led yellowLed   (YELLOW_PIN, false);
 volatile unsigned int dst; /// Attention, distance max ~1km
 char bBuffer[BLUETOOTH_BUFFER_LENGTH]; // buffer bluetooth
 float portiques[][4] = {{5, -1, -1, -1}, {3, 5, 7, -1}}; // Distances des portiques de l'origine du scénario
-int initialSpeeds[] = {255, 255}; // Vitesses initiales des scénarios
+int initialSpeeds[] = {255, 100}; // Vitesses initiales des scénarios
 char scenario = -1; // Scénario (-1 par défaut)
 char portique = 0; // Portique actuel (0 par défaut)
 
@@ -166,27 +166,37 @@ void setup(void)
 **/
 void handlePortique(bool forced)
 {
-    if (scenario == 0)
-    {
-        if (portique == 1)
-        {
+    switch (scenario) {
+    case 0: // Scénario 0
+        switch (portique) {
+        case 1:
             motor.stop();
+            break;
+        default:
+            motor.free();
+            break;
         }
-    }
-    else if (scenario == 1)
-    {
-        if (portique == 1)
-        {
+        break;
+    case 1: // Scénario 1
+        switch (portique) {
+        case 1:
             motor.forward(200);
-        }
-        else if (portique == 2)
-        {
+            break;
+        case 2:
             motor.forward(255);
-        }
-        else if (portique == 3)
-        {
+            break;
+        case 3:
             motor.stop();
+            break;
+        default:
+            motor.free();
+            break;
         }
+        break;
+    default: // Scénario inconnu
+        scenario = 0;
+        motor.free();
+        break;
     }
 }
 
@@ -194,27 +204,22 @@ void handlePortique(bool forced)
     Gestion des événements liés aux commandes.
 **/
     /* AJOUTER les commandes ICI */
-
 void handleSerial(void)
 {
-    if (bBuffer[0] == 'T')   // Throttle -> Avancer
-    {
-        int speed = parseInt(bBuffer, 1, BLUETOOTH_BUFFER_LENGTH);
-        motor.forward(speed);
-    }
-    else if (bBuffer[0] == 'F')     // Free -> Libérer la roue
-    {
+    switch (bBuffer[0]) {
+    case 'T': // Throttle
+        motor.forward(parseInt(bBuffer, 1, BLUETOOTH_BUFFER_LENGTH));
+        break;
+    case 'F': // Roue libre
         motor.free();
-    }
-    else if (bBuffer[0] == 'S')     // S -> Scénario
-    {
+        break;
+    case 'S': // Scénario
         scenario = parseInt(bBuffer, 1, 2) - 1;
         motor.forward(initialSpeeds[scenario]);
         dst = 0;
         portique = 0;
-    }
-    else     // Ping ou erreur
-    {
+        break;
+    default: // Erreur ou ping
         Serial.print(bBuffer[0]);
     }
 }
@@ -273,6 +278,8 @@ void serialEvent(void)
 **/
 void calcPortiques(void) {
     float distance = getDistance(); // Distance parcourue
+    Serial.println(distance);
+    Serial.println(portiques[scenario][portique]);
     /* Gestion LED */
     // Si est dans la zone d'un portique on allume la LED
     if (portiques[scenario][portique] != -1 && distance > portiques[scenario][portique] - PORTIQUE_DISTANCE_TOLERANCE && distance < portiques[scenario][portique] + PORTIQUE_DISTANCE_TOLERANCE)
@@ -302,7 +309,10 @@ void calcPortiques(void) {
     {
         // Si on a dépassé la zone du portique,
         /* timeout */
-        if (distance > expected + PORTIQUE_DISTANCE_TOLERANCE) handlePortique(true);
+        if (distance > expected + PORTIQUE_DISTANCE_TOLERANCE) {
+            ++portique;
+             handlePortique(true);
+        }
     }
 }
 
