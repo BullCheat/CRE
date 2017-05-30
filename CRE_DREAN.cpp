@@ -38,7 +38,7 @@ using namespace std;
 #define IN1_PIN 5 // Pin IN1 driver moteur
 #define IN2_PIN 6 // Pin IN2 driver moteur
 
-#define PROXIMITY_INTERVAL 10 // Intervalle de vérification de la proximité (en ms)
+#define PROXIMITY_INTERVAL 50 // Intervalle de vérification de la proximité (en ms)
 #define PRX_TRG_PIN 7 // Pin TRIG HC-SR04
 #define PRX_ECH_PIN 2 // Pin ECHO HC-SR04
 
@@ -51,6 +51,7 @@ using namespace std;
 #define PIN_ISR_DISTANCE 3 // Pin auquel est branché le capteur fourche pour mesurer la distance parcourue
 #define PORTIQUE_HEIGHT 0.25
 #define PORTIQUE_HEIGHT_TOLERANCE 0.05
+#define PORTIQUE_DISTANCE_TOLERANCE 1
 
 /*! ===========================================================================================================================
 //                         Objets et variables globales
@@ -62,6 +63,9 @@ Led blueLed     (BLUE_PIN  , false);
 Led yellowLed   (YELLOW_PIN, false);
 volatile unsigned int dst; /// Attention, distance max ~1km
 char bBuffer[BLUETOOTH_BUFFER_LENGTH]; // buffer bluetooth
+float portiques[][4] = {{5, -1, -1, -1}, {3, 5, 7, -1}};
+char scenario = -1;
+char portique;
 
 Motor motor (ENA_PIN, IN1_PIN, IN2_PIN);
 ProximitySensor proximitySensor (PRX_TRG_PIN, PRX_ECH_PIN, PROXIMITY_INTERVAL);
@@ -152,7 +156,21 @@ void setup(void)
     attachInterrupt(PIN_ISR_DISTANCE-2, _isrDistance, RISING);
 }
 
-
+void handlePortique(void) {
+    if (scenario == 0) {
+        if (portique == 1) {
+            motor.stop();
+        }
+    } else if (scenario == 1) {
+        if (portique == 1) {
+            motor.forward(200);
+        } else if (portique == 2) {
+            motor.forward(255);
+        } else if (portique == 3) {
+            motor.stop();
+        }
+    }
+}
 
 ///
 /// Réception des commandes ICI
@@ -170,7 +188,7 @@ void handleSerial(void)
     }
     else if (bBuffer[0] == 'S')     // S -> Scénario
     {
-        char scenario = parseInt(bBuffer, 1, 2);
+        scenario = parseInt(bBuffer, 1, 2);
     }
     else     // Ping ou erreur
     {
@@ -234,11 +252,24 @@ void serialEvent(void)
 
 void loop(void)
 {
-    long ceil = proximitySensor.getDistance();
+    float ceil = proximitySensor.getDistance();
     if (ceil > PORTIQUE_HEIGHT - PORTIQUE_HEIGHT_TOLERANCE && ceil < PORTIQUE_HEIGHT + PORTIQUE_HEIGHT_TOLERANCE)
     {
-        redLed.on();
+        if (scenario != -1)
+        {
+            float distance = getDistance();
+            if (portiques[scenario][portique] != -1)
+            {
+                if (distance > portiques[scenario][portique] - PORTIQUE_DISTANCE_TOLERANCE && distance < portiques[scenario][portique] + PORTIQUE_DISTANCE_TOLERANCE)
+                {
+                    ++portique;
+                    handlePortique();
+                }
+            }
+        }
     }
-    else redLed.off();
+    else
+    {
+    }
 
 }
