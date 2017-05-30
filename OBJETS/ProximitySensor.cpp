@@ -1,11 +1,11 @@
 #include "ProximitySensor.h"
 #include <Arduino.h>
 
-#define mS_TO_M (1/((2.0*SOUND_SPEED)*100))/1000
+#define uS_TO_M SOUND_SPEED/2000000.0
 
 unsigned long lastPoll;
 volatile unsigned long lastDistanceSet;
-volatile unsigned long distance;
+volatile float distance;
 
 /**
     Interrupt pour mettre à jour la distance
@@ -13,7 +13,7 @@ volatile unsigned long distance;
 void interrupt(void)
 {
     unsigned long result = micros() - lastPoll;
-    distance = result * mS_TO_M;
+    distance = result * uS_TO_M;
     lastDistanceSet = micros();
 }
 
@@ -35,9 +35,9 @@ ProximitySensor::ProximitySensor(char trigger, char echo, long wait)
     Appel non-bloquant.
     @return La distance relevée par le capteur ultrason ou -1 si OoR
 **/
-long ProximitySensor::getDistance()
+float ProximitySensor::getDistance()
 {
-    return micros() - lastDistanceSet < this->wait*1000 + 1000 ? distance : -1;
+    return micros() - lastDistanceSet < this->wait*1000 + 1000 ? distance : distance;
 }
 
 /**
