@@ -64,8 +64,9 @@ Led yellowLed   (YELLOW_PIN, false);
 volatile unsigned int dst; /// Attention, distance max ~1km
 char bBuffer[BLUETOOTH_BUFFER_LENGTH]; // buffer bluetooth
 float portiques[][4] = {{5, -1, -1, -1}, {3, 5, 7, -1}};
+int initialSpeeds[] = {255, 255};
 char scenario = -1;
-char portique;
+char portique = 0;
 
 Motor motor (ENA_PIN, IN1_PIN, IN2_PIN);
 ProximitySensor proximitySensor (PRX_TRG_PIN, PRX_ECH_PIN, PROXIMITY_INTERVAL);
@@ -188,7 +189,10 @@ void handleSerial(void)
     }
     else if (bBuffer[0] == 'S')     // S -> Scénario
     {
-        scenario = parseInt(bBuffer, 1, 2);
+        scenario = parseInt(bBuffer, 1, 2) - 1;
+        motor.forward(initialSpeeds[scenario]);
+        dst = 0;
+        portique = 0;
     }
     else     // Ping ou erreur
     {
