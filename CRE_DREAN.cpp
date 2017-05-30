@@ -157,17 +157,27 @@ void setup(void)
     attachInterrupt(PIN_ISR_DISTANCE-2, _isrDistance, RISING);
 }
 
-void handlePortique(bool forced) {
-    if (scenario == 0) {
-        if (portique == 1) {
+void handlePortique(bool forced)
+{
+    if (scenario == 0)
+    {
+        if (portique == 1)
+        {
             motor.stop();
         }
-    } else if (scenario == 1) {
-        if (portique == 1) {
+    }
+    else if (scenario == 1)
+    {
+        if (portique == 1)
+        {
             motor.forward(200);
-        } else if (portique == 2) {
+        }
+        else if (portique == 2)
+        {
             motor.forward(255);
-        } else if (portique == 3) {
+        }
+        else if (portique == 3)
+        {
             motor.stop();
         }
     }
@@ -257,9 +267,11 @@ void serialEvent(void)
 void loop(void)
 {
     float distance = getDistance();
-    if (scenario != -1 && portiques[scenario][portique] != -1 && distance > portiques[scenario][portique] - PORTIQUE_DISTANCE_TOLERANCE && distance < portiques[scenario][portique] + PORTIQUE_DISTANCE_TOLERANCE) {
+    if (scenario != -1 && portiques[scenario][portique] != -1 && distance > portiques[scenario][portique] - PORTIQUE_DISTANCE_TOLERANCE && distance < portiques[scenario][portique] + PORTIQUE_DISTANCE_TOLERANCE)
+    {
         redLed.on();
-    } else redLed.off();
+    }
+    else redLed.off();
     float ceil = proximitySensor.getDistance();
     if (ceil > PORTIQUE_HEIGHT - PORTIQUE_HEIGHT_TOLERANCE && ceil < PORTIQUE_HEIGHT + PORTIQUE_HEIGHT_TOLERANCE)
     {
@@ -276,9 +288,11 @@ void loop(void)
         }
     }
 
-    if (scenario != -1) {
+    if (scenario != -1)
+    {
         float expected = portiques[scenario][portique];
-        if (expected != -1) {
+        if (expected != -1)
+        {
             expected += PORTIQUE_DISTANCE_TOLERANCE;
             if (distance > expected) handlePortique(true);
         }
