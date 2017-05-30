@@ -1,7 +1,7 @@
 #include "ProximitySensor.h"
 #include <Arduino.h>
 
-#define mS_TO_CM 1/((2.0*SOUND_SPEED)*100)
+#define mS_TO_M (1/((2.0*SOUND_SPEED)*100))/1000
 
 unsigned long lastPoll;
 volatile unsigned long lastDistanceSet;
@@ -13,7 +13,7 @@ volatile unsigned long distance;
 void interrupt(void)
 {
     unsigned long result = micros() - lastPoll;
-    distance = result * mS_TO_CM;
+    distance = result * mS_TO_M;
     lastDistanceSet = micros();
 }
 

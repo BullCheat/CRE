@@ -49,6 +49,8 @@ using namespace std;
 #define U_PER_HZ 13.2f // Nombre d'unités de tension arduino par hz de la carte F/U
 
 #define PIN_ISR_DISTANCE 3 // Pin auquel est branché le capteur fourche pour mesurer la distance parcourue
+#define PORTIQUE_HEIGHT 0.25
+#define PORTIQUE_HEIGHT_TOLERANCE 0.05
 
 /*! ===========================================================================================================================
 //                         Objets et variables globales
@@ -233,7 +235,7 @@ void serialEvent(void)
 void loop(void)
 {
     long ceil = proximitySensor.getDistance();
-    if (distance > 200 && distance < 300)
+    if (ceil > PORTIQUE_HEIGHT - PORTIQUE_HEIGHT_TOLERANCE && ceil < PORTIQUE_HEIGHT + PORTIQUE_HEIGHT_TOLERANCE)
     {
         redLed.on();
     }
