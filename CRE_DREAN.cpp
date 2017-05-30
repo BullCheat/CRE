@@ -327,3 +327,6 @@ void loop(void)
     if (scenario != 1) calcPortiques();
 
 }
+
+/// TODO Septembre
+/// Améliorer le freinage + implémenter une vraie limitation de vitesse avec utilisation carte F/U et moyenne sur section (handlePortique)
