@@ -226,14 +226,13 @@ void serialEvent(void)
 }
 
 
-
 /*! ===========================================================================================================================
 //                          programme principal
 // ===========================================================================================================================*/
 
 void loop(void)
 {
-    long distance = proximitySensor.getDistance();
+    long ceil = proximitySensor.getDistance();
     if (distance > 200 && distance < 300)
     {
         redLed.on();
