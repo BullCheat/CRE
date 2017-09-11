@@ -67,6 +67,9 @@ float portiques[][4] = {{5, -1, -1, -1}, {3, 5, 7, -1}}; // Distances des portiq
 int initialSpeeds[] = {255, 100}; // Vitesses initiales des scénarios
 char scenario = -1; // Scénario (-1 par défaut)
 char portique = 0; // Portique actuel (0 par défaut)
+unsigned long lastWheelPing;
+unsigned long prevWheelPing;
+unsigned long lastDebugSent = 0;
 
 Motor motor (ENA_PIN, IN1_PIN, IN2_PIN);
 ProximitySensor proximitySensor (PRX_TRG_PIN, PRX_ECH_PIN, PROXIMITY_INTERVAL);
@@ -79,6 +82,8 @@ ProximitySensor proximitySensor (PRX_TRG_PIN, PRX_ECH_PIN, PROXIMITY_INTERVAL);
 void _isrDistance(void)
 {
     dst++;
+    prevWheelPing = lastWheelPing;
+    lastWheelPing = micros();
 }
 
 /**
@@ -134,11 +139,11 @@ float getDistance(void)
 **/
 float getInstantSpeed(void)
 {
-    int poll = analogRead(F_U_PIN); // On lit la valeur
-    poll -= U_ORIGIN; // On retire le "b" de ax+b
-    float freq = poll / (float) U_PER_HZ; // On divise pour obtenir la fréquence
-    freq /= (float) TEETH_COUNT; // On divise par le nombre de dents pour avoir la fréquence réelle
-    float speed = freq * (float) DISTANCE_PER_ROTATION; // On multiplie pour obtenir la distance roulée en 1s
+    if (prevWheelPing == 0) return 0;
+    float delta = (max(lastWheelPing - prevWheelPing, micros() - lastWheelPing))/(float)1000000; // delta en micros -> delta en sec
+    delta *= TEETH_COUNT; // secondes par tour
+    float speed = 1 / delta; // tours par seconde
+    speed *= DISTANCE_PER_ROTATION; // m/s
     return speed;
 }
 
@@ -155,6 +160,8 @@ void setup(void)
     FlexiTimer2::start(); // Utilise INT0 - Désactivé pour pouvoir calculer la distance
     pinMode(PIN_ISR_DISTANCE, INPUT_PULLUP);
     attachInterrupt(PIN_ISR_DISTANCE-2, _isrDistance, RISING);
+    prevWheelPing = 0;
+    lastWheelPing = micros();
 }
 
 /**
@@ -273,13 +280,23 @@ void serialEvent(void)
     }
 }
 
+void debug(float distance, int scenario, int portique, float speed) {
+    Serial.println(distance);
+    Serial.println(scenario);
+    Serial.println(portique);
+    Serial.println(speed);
+}
+
 /**
     Passe les portiques + appelle handlePortique
 **/
 void calcPortiques(void) {
     float distance = getDistance(); // Distance parcourue
-    Serial.println(distance);
-    Serial.println(portiques[scenario][portique]);
+    unsigned long mic = millis();
+    if (mic - lastDebugSent > 100) {
+            lastDebugSent = mic;
+        debug(distance, scenario, portique, getInstantSpeed());
+    }
     /* Gestion LED */
     // Si est dans la zone d'un portique on allume la LED
     if (portiques[scenario][portique] != -1 && distance > portiques[scenario][portique] - PORTIQUE_DISTANCE_TOLERANCE && distance < portiques[scenario][portique] + PORTIQUE_DISTANCE_TOLERANCE)
@@ -330,3 +347,4 @@ void loop(void)
 
 /// TODO Septembre
 /// Améliorer le freinage + implémenter une vraie limitation de vitesse avec utilisation carte F/U et moyenne sur section (handlePortique)
+/// Renommer wifi voiture 17
