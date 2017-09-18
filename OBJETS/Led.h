@@ -1,4 +1,5 @@
-class Led {
+class Led
+{
 private:
     char pin;
     bool state;

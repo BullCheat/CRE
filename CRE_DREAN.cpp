@@ -64,7 +64,7 @@ Led yellowLed   (YELLOW_PIN, false);
 volatile unsigned int dst; /// Attention, distance max ~1km
 char bBuffer[BLUETOOTH_BUFFER_LENGTH]; // buffer bluetooth
 float portiques[][4] = {{5, -1, -1, -1}, {3, 5, 7, -1}}; // Distances des portiques de l'origine du scénario
-int initialSpeeds[] = {255, 100}; // Vitesses initiales des scénarios
+int initialSpeeds[] = {255, 255}; // Vitesses initiales des scénarios
 char scenario = -1; // Scénario (-1 par défaut)
 char portique = 0; // Portique actuel (0 par défaut)
 unsigned long lastWheelPing;
@@ -173,9 +173,11 @@ void setup(void)
 **/
 void handlePortique(bool forced)
 {
-    switch (scenario) {
+    switch (scenario)
+    {
     case 0: // Scénario 0
-        switch (portique) {
+        switch (portique)
+        {
         case 1:
             motor.stop();
             break;
@@ -185,7 +187,8 @@ void handlePortique(bool forced)
         }
         break;
     case 1: // Scénario 1
-        switch (portique) {
+        switch (portique)
+        {
         case 1:
             motor.forward(200);
             break;
@@ -210,10 +213,11 @@ void handlePortique(bool forced)
 /**
     Gestion des événements liés aux commandes.
 **/
-    /* AJOUTER les commandes ICI */
+/* AJOUTER les commandes ICI */
 void handleSerial(void)
 {
-    switch (bBuffer[0]) {
+    switch (bBuffer[0])
+    {
     case 'T': // Throttle
         motor.forward(parseInt(bBuffer, 1, BLUETOOTH_BUFFER_LENGTH));
         break;
@@ -222,7 +226,7 @@ void handleSerial(void)
         break;
     case 'S': // Scénario
         scenario = parseInt(bBuffer, 1, 2) - 1;
-        motor.forward(initialSpeeds[scenario]);
+        if (scenario >= 0) motor.forward(initialSpeeds[scenario]); else motor.stop();
         dst = 0;
         portique = 0;
         break;
@@ -280,23 +284,22 @@ void serialEvent(void)
     }
 }
 
-void debug(float distance, int scenario, int portique, float speed) {
+void debug(float distance, int scenario, int portique, float speed)
+{
+    Serial.print("d=");
     Serial.println(distance);
-    Serial.println(scenario);
+    Serial.print("p=");
     Serial.println(portique);
+    Serial.print("v=");
     Serial.println(speed);
 }
 
 /**
     Passe les portiques + appelle handlePortique
 **/
-void calcPortiques(void) {
+void calcPortiques(void)
+{
     float distance = getDistance(); // Distance parcourue
-    unsigned long mic = millis();
-    if (mic - lastDebugSent > 100) {
-            lastDebugSent = mic;
-        debug(distance, scenario, portique, getInstantSpeed());
-    }
     /* Gestion LED */
     // Si est dans la zone d'un portique on allume la LED
     if (portiques[scenario][portique] != -1 && distance > portiques[scenario][portique] - PORTIQUE_DISTANCE_TOLERANCE && distance < portiques[scenario][portique] + PORTIQUE_DISTANCE_TOLERANCE)
@@ -318,7 +321,7 @@ void calcPortiques(void) {
             }
         }
     }
-/* Gestion timeout portique */
+    /* Gestion timeout portique */
     // Si on est dans un scénario
     // Quelle est la distance prévue ?
     float expected = portiques[scenario][portique];
@@ -326,9 +329,10 @@ void calcPortiques(void) {
     {
         // Si on a dépassé la zone du portique,
         /* timeout */
-        if (distance > expected + PORTIQUE_DISTANCE_TOLERANCE) {
+        if (distance > expected + PORTIQUE_DISTANCE_TOLERANCE)
+        {
             ++portique;
-             handlePortique(true);
+            handlePortique(true);
         }
     }
 }
@@ -341,7 +345,14 @@ void calcPortiques(void) {
 void loop(void)
 {
     // On gère le passage des portiques si on est dans un scénario
-    if (scenario != 1) calcPortiques();
+    if (scenario != -1) calcPortiques();
+
+    unsigned long mic = millis();
+    if (mic - lastDebugSent > 250)
+    {
+        lastDebugSent = mic;
+        debug(getDistance(), scenario, portique, getInstantSpeed());
+    }
 
 }
 

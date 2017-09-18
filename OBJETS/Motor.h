@@ -1,4 +1,5 @@
-class Motor {
+class Motor
+{
 protected:
     char in1;
     char in2;
