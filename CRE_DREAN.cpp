@@ -355,7 +355,3 @@ void loop(void)
     }
 
 }
-
-/// TODO Septembre
-/// Améliorer le freinage + implémenter une vraie limitation de vitesse avec utilisation carte F/U et moyenne sur section (handlePortique)
-/// Renommer wifi voiture 17
