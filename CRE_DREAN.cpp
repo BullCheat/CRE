@@ -20,6 +20,7 @@
 #include <Motor.h>
 #include <ProximitySensor.h>
 #include <FlexiTimer2.h>
+#include <math.h>
 using namespace std;
 
 // Leds TODO FIXME
@@ -70,6 +71,13 @@ char portique = 0; // Portique actuel (0 par défaut)
 unsigned long lastWheelPing;
 unsigned long prevWheelPing;
 unsigned long lastDebugSent = 0;
+
+// Système limitation scenario 2 portique 2
+long timeTarget = 10000; // Temps attendu pour passer entre les deux portiques, en ms /// Pas unsigned sinon bug lors de la soustraction
+float distanceLimit = portiques[1][2] - portiques[1][1]; // Distance entre les deux portiques
+unsigned long startMillis = 0; // Temps de passage au portique
+unsigned long startDistance = 0; // Distance lors du passage au portique
+unsigned long lastPortiqueMillis = 0;
 
 Motor motor (ENA_PIN, IN1_PIN, IN2_PIN);
 ProximitySensor proximitySensor (PRX_TRG_PIN, PRX_ECH_PIN, PROXIMITY_INTERVAL);
@@ -288,10 +296,14 @@ void debug(float distance, int scenario, int portique, float speed)
 {
     Serial.print("d=");
     Serial.println(distance);
+    Serial.print("s=");
+    Serial.println(scenario);
     Serial.print("p=");
     Serial.println(portique);
     Serial.print("v=");
     Serial.println(speed);
+    Serial.print("m=");
+    Serial.println(motor.getSpeed());
 }
 
 /**
@@ -333,6 +345,29 @@ void calcPortiques(void)
         {
             ++portique;
             handlePortique(true);
+        }
+    }
+    if (scenario == 1 && portique == 1 && millis() - lastPortiqueMillis > 100) { // Si on doit limiter la vitesse
+        lastPortiqueMillis = millis();
+        if (startMillis == 0 || startDistance == 0) { // Si on n'a pas encore initialisé le limiteur
+            startMillis = millis();
+            startDistance = distance;
+        } else if (distance - startDistance > 0.1F) { // Sinon, si on a parcouru assez de distance pour avoir une estimation relativement™ fiable
+            float dRestante = distanceLimit - distance + startDistance;
+            long tRestant = ((long) timeTarget + (long) startMillis) - (long) millis();
+            Serial.print("trestant=");
+            Serial.println(tRestant);
+            Serial.print("drestant=");
+            Serial.println(dRestante);
+            if (tRestant <= 0) motor.forward(255);
+            else {
+                float expectedSpeed = dRestante / ((float) tRestant/1000.0F);
+                float currentSpeed = getInstantSpeed();
+                int wantedStep = (int) floor((expectedSpeed - currentSpeed) * 10);
+                Serial.print("w=");
+                Serial.println(wantedStep);
+                motor.step(wantedStep);
+            }
         }
     }
 }
