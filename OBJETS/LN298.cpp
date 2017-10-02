@@ -24,6 +24,7 @@ void Motor::forward(int speed)
     this->power = true;
     this->reverse = speed < 0;
     this->speed = speed < 0 ? -speed : speed;
+    if (this->speed > 255) this->speed = 255;
     this->update();
 }
 
@@ -34,6 +35,13 @@ void Motor::free()
 {
     this->speed = this->reverse = this->power = 0;
     this->update();
+}
+
+int Motor::getSpeed()
+{
+    int i = this->speed;
+    if (i < 0) i+= 256;
+    return i;
 }
 
 /**
@@ -66,4 +74,12 @@ void Motor::update()
     digitalWrite(ena, this->power);
     analogWrite(in1, !this->reverse ? speed : 0);
     analogWrite(in2,  this->reverse ? speed : 0);
+}
+
+void Motor::step(int step)
+{
+    if (this->reverse) return;
+    if (speed + step < 0) step = speed;
+    this->forward(speed + step);
+    update();
 }
