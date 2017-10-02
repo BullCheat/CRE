@@ -63,7 +63,7 @@ Led blueLed     (BLUE_PIN  , false);
 Led yellowLed   (YELLOW_PIN, false);
 volatile unsigned int dst; /// Attention, distance max ~1km
 char bBuffer[BLUETOOTH_BUFFER_LENGTH]; // buffer bluetooth
-float portiques[][4] = {{5, -1, -1, -1}, {3, 5, 7, -1}}; // Distances des portiques de l'origine du scénario
+float portiques[][4] = {{9, -1, -1, -1}, {4, 6, 9, -1}}; // Distances des portiques de l'origine du scénario
 int initialSpeeds[] = {255, 255}; // Vitesses initiales des scénarios
 char scenario = -1; // Scénario (-1 par défaut)
 char portique = 0; // Portique actuel (0 par défaut)
