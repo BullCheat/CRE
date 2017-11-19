@@ -35,24 +35,22 @@ using namespace std;
 
 // Motor
 /// À configurer
-#define ENA_PIN 4 // Pin ENA driver moteur
-#define IN1_PIN 5 // Pin IN1 driver moteur
-#define IN2_PIN 6 // Pin IN2 driver moteur
+#define ENA_PIN 8 // Pin ENA driver moteur
+#define IN1_PIN 9 // Pin IN1 driver moteur
+#define IN2_PIN 10 // Pin IN2 driver moteur
 
-#define PROXIMITY_INTERVAL 10 // Intervalle de vérification de la proximité (en ms)
-#define PRX_TRG_PIN 7 // Pin TRIG HC-SR04
-#define PRX_ECH_PIN 2 // Pin ECHO HC-SR04
+#define PROXIMITY_INTERVAL 4 // Intervalle de vérification de la proximité (en ms)
+#define PRX_TRG_PIN 11 // Pin TRIG HC-SR04
+#define PRX_ECH_PIN 12 // Pin ECHO HC-SR04
 
 #define F_U_PIN A0 // Pin de la carte fréquence/tension
 #define TEETH_COUNT 5 // Nombre de dents sur la roue permettant de mesurer la vitesse
-#define DISTANCE_PER_ROTATION 0.062*3.141591 // Développé de la roue
-#define U_ORIGIN 0 // b de ax+b du calcul de la tension
-#define U_PER_HZ 13.2f // Nombre d'unités de tension arduino par hz de la carte F/U
+#define DISTANCE_PER_ROTATION 0.06*3.141591 // Développé de la roue
 
 #define PIN_ISR_DISTANCE 3 // Pin auquel est branché le capteur fourche pour mesurer la distance parcourue
-#define PORTIQUE_HEIGHT 0.25
+#define PORTIQUE_HEIGHT 0.32
 #define PORTIQUE_HEIGHT_TOLERANCE 0.05
-#define PORTIQUE_DISTANCE_TOLERANCE 1
+#define PORTIQUE_DISTANCE_TOLERANCE 3
 
 /*! ===========================================================================================================================
 //                         Objets et variables globales
@@ -64,7 +62,6 @@ Led blueLed     (BLUE_PIN  , false);
 Led yellowLed   (YELLOW_PIN, false);
 volatile unsigned int dst; /// Attention, distance max ~1km
 char bBuffer[BLUETOOTH_BUFFER_LENGTH]; // buffer bluetooth
-float portiques[][4] = {{9, -1, -1, -1}, {4, 6, 9, -1}}; // Distances des portiques de l'origine du scénario
 int initialSpeeds[] = {255, 255}; // Vitesses initiales des scénarios
 char scenario = -1; // Scénario (-1 par défaut)
 char portique = 0; // Portique actuel (0 par défaut)
@@ -74,12 +71,13 @@ unsigned long lastDebugSent = 0;
 
 // Système limitation scenario 2 portique 2
 long timeTarget = 10000; // Temps attendu pour passer entre les deux portiques, en ms /// Pas unsigned sinon bug lors de la soustraction
-float distanceLimit = portiques[1][2] - portiques[1][1]; // Distance entre les deux portiques
+float distanceLimit = 5; // Distance entre les deux portiques
 unsigned long startMillis = 0; // Temps de passage au portique
 unsigned long startDistance = 0; // Distance lors du passage au portique
 unsigned long lastPortiqueMillis = 0;
+float lastPortiqueDistance = 0;
 
-Motor motor (ENA_PIN, IN1_PIN, IN2_PIN);
+Motor motor (ENA_PIN, IN1_PIN, IN2_PIN);	
 ProximitySensor proximitySensor (PRX_TRG_PIN, PRX_ECH_PIN, PROXIMITY_INTERVAL);
 
 /* ISR */
@@ -140,7 +138,7 @@ long int parseInt(char ascii[], char offset, char end)
 **/
 float getDistance(void)
 {
-    return dst / (float) TEETH_COUNT * DISTANCE_PER_ROTATION;
+    return (dst / (float) TEETH_COUNT) * DISTANCE_PER_ROTATION;
 }
 /**
     @return vitesse en m/s
@@ -181,12 +179,19 @@ void setup(void)
 **/
 void handlePortique(bool forced)
 {
+    Serial.print("portique=");
+    Serial.print(forced);
+    Serial.println(static_cast<int>(portique));
     switch (scenario)
     {
     case 0: // Scénario 0
         switch (portique)
         {
-        case 1:
+	case 1:
+	case 2:
+		motor.forward(255);
+		break;
+        case 3:
             motor.stop();
             break;
         default:
@@ -198,7 +203,11 @@ void handlePortique(bool forced)
         switch (portique)
         {
         case 1:
+            motor.free();
+	    delay(3000);
             motor.forward(200);
+	    delay(1000);
+            motor.forward(255);
             break;
         case 2:
             motor.forward(255);
@@ -304,6 +313,8 @@ void debug(float distance, int scenario, int portique, float speed)
     Serial.println(speed);
     Serial.print("m=");
     Serial.println(motor.getSpeed());
+    Serial.print("u=");
+    Serial.println(proximitySensor.getDistance());
 }
 
 /**
@@ -312,63 +323,17 @@ void debug(float distance, int scenario, int portique, float speed)
 void calcPortiques(void)
 {
     float distance = getDistance(); // Distance parcourue
-    /* Gestion LED */
-    // Si est dans la zone d'un portique on allume la LED
-    if (portiques[scenario][portique] != -1 && distance > portiques[scenario][portique] - PORTIQUE_DISTANCE_TOLERANCE && distance < portiques[scenario][portique] + PORTIQUE_DISTANCE_TOLERANCE)
-    {
-        redLed.on();
-    } // Sinon on l'éteint
-    else redLed.off();
     float ceil = proximitySensor.getDistance(); // Distance ultrasons
     /* Gestion passage portique */
     if (ceil > PORTIQUE_HEIGHT - PORTIQUE_HEIGHT_TOLERANCE && ceil < PORTIQUE_HEIGHT + PORTIQUE_HEIGHT_TOLERANCE) // Si l'ultrasons détecte quelque-chose à la distance attendue pour un portique
     {
-        if (portiques[scenario][portique] != -1) // Si on n'est pas à la fin du scénario
-        {
-            if (distance > portiques[scenario][portique] - PORTIQUE_DISTANCE_TOLERANCE) // Si on est dans la zone d'erreur du portique (pas besoin de tester avec + TOLERANCE car on gère le tout plus bas (timeout))
-            {
-                // On passe le portique et on appelle la fonction de gestion
-                ++portique;
-                handlePortique(false);
-            }
-        }
-    }
-    /* Gestion timeout portique */
-    // Si on est dans un scénario
-    // Quelle est la distance prévue ?
-    float expected = portiques[scenario][portique];
-    if (expected != -1) // Si on n'est pas à la fin du scénario
-    {
-        // Si on a dépassé la zone du portique,
-        /* timeout */
-        if (distance > expected + PORTIQUE_DISTANCE_TOLERANCE)
-        {
-            ++portique;
-            handlePortique(true);
-        }
-    }
-    if (scenario == 1 && portique == 1 && millis() - lastPortiqueMillis > 100) { // Si on doit limiter la vitesse
-        lastPortiqueMillis = millis();
-        if (startMillis == 0 || startDistance == 0) { // Si on n'a pas encore initialisé le limiteur
-            startMillis = millis();
-            startDistance = distance;
-        } else if (distance - startDistance > 0.1F) { // Sinon, si on a parcouru assez de distance pour avoir une estimation relativement™ fiable
-            float dRestante = distanceLimit - distance + startDistance;
-            long tRestant = ((long) timeTarget + (long) startMillis) - (long) millis();
-            Serial.print("trestant=");
-            Serial.println(tRestant);
-            Serial.print("drestant=");
-            Serial.println(dRestante);
-            if (tRestant <= 0) motor.forward(255);
-            else {
-                float expectedSpeed = dRestante / ((float) tRestant/1000.0F);
-                float currentSpeed = getInstantSpeed();
-                int wantedStep = (int) floor((expectedSpeed - currentSpeed) * 10);
-                Serial.print("w=");
-                Serial.println(wantedStep);
-                motor.step(wantedStep);
-            }
-        }
+	    if (distance - lastPortiqueDistance > PORTIQUE_DISTANCE_TOLERANCE) // Si on est dans la zone d'erreur du portique (pas besoin de tester avec + TOLERANCE car on gère le tout plus bas (timeout))
+	    {
+		// On passe le portique et on appelle la fonction de gestion
+		++portique;
+		lastPortiqueDistance = distance;
+		handlePortique(false);
+	    }
     }
 }
 
@@ -381,6 +346,9 @@ void loop(void)
 {
     // On gère le passage des portiques si on est dans un scénario
     if (scenario != -1) calcPortiques();
+    float ceil = proximitySensor.getDistance(); // Distance ultrasons
+    /* Gestion passage portique */
+    digitalWrite(RED_PIN, (ceil > PORTIQUE_HEIGHT - PORTIQUE_HEIGHT_TOLERANCE && ceil < PORTIQUE_HEIGHT + PORTIQUE_HEIGHT_TOLERANCE));
 
     unsigned long mic = millis();
     if (mic - lastDebugSent > 250)
